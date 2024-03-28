@@ -1,0 +1,77 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+environment_overrides:
+playbook_debug: false
+download_path: "~/"
+
+openstacksdk_log_level:
+openstack_cloud_endpoint:
+openstack_cloud_region:
+openstack_cloud_project:
+
+manageiq_openstack_public_key:
+manageiq_openstack_public_key_file:
+manageiq_openstack_public_key_name:
+
+manageiq_image_delete_local: false
+manageiq_openstack_image_name: ManageIQ Petrosian
+manageiq_openstack_image_container_format: bare
+manageiq_openstack_image_disk_format: qcow2
+manageiq_openstack_image_tags: ['manageiq']
+manageiq_openstack_image_public: true
+manageiq_openstack_image_protected: true
+manageiq_openstack_image_owner: admin
+manageiq_openstack_image_state: present
+
+manageiq_openstack_flavor_name: ManageIQ Appliance
+manageiq_openstack_flavor_description: ManageIQ Petrosian Appliance for Openstack
+manageiq_openstack_flavor_ram: 8192
+manageiq_openstack_flavor_vcpus: 4
+manageiq_openstack_flavor_disk: 80
+manageiq_openstack_flavor_state: present
+
+manageiq_openstack_volume_name: ManageIQ Database
+manageiq_openstack_volume_description: ManageIQ Appliance Database Volume
+manageiq_openstack_volume_size: 50
+manageiq_openstack_volume_state: present
+
+manageiq_openstack_instance_name: ManageIQ
+manageiq_openstack_instance_description: ManageIQ Petrosian Appliance
+manageiq_openstack_instance_keyname: support
+manageiq_openstack_instance_networks: [ { net-name: public }, { net-name: private } ]
+manageiq_openstack_instance_state: present
+manageiq_openstack_instance_ssh_net_name: public
+
+manageiq_openstack_secgroup_name: ManageIQ
+manageiq_openstack_secgroup_description: ManageIQ Appliance security group
+manageiq_openstack_secgroup_state: present
+manageiq_openstack_secgroup_rules:
+        - description: Allow HTTPS
+          remote_ip_prefix: 0.0.0.0/0
+          protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+          direction: ingress
+        - description: Allow SSH
+          remote_ip_prefix: 0.0.0.0/0
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+          direction: ingress
+        - description: Allow Ping
+          remote_ip_prefix: 0.0.0.0/0
+          protocol: icmp
+          direction: ingress

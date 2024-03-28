@@ -1,0 +1,40 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Create Openstack Keypair
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: openstack_keypair
+  openstack.cloud.keypair:
+    name: "{{ openstack_keypair_name }}"
+    public_key: "{{ openstack_public_key | default(omit, true) }}"
+    public_key_file: "{{ openstack_public_key_file | default(omit, true) }}"
+    state: "{{ openstack_keypair_state | default(omit, true) }}"
+
+- name: DEBUG TASK [ Create Openstack Keypair ]
+  when: playbook_debug | default(false)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ openstack_keypair_name }}"
+      - "public_key: {{ openstack_public_key | default(omit, true) }}"
+      - "public_key_file: {{ openstack_public_key_file | default(omit, true) }}"
+      - "state: {{ openstack_keypair_state | default(omit, true) }}"
+      - "openstack_keypair -> "
+      - "{{ openstack_keypair }}"
+
+- name: Set Openstack Keypair Fact
+  when: manageiq_openstack_instance_keyname is undefined
+  ansible.builtin.set_fact:
+    manageiq_openstack_instance_keyname: openstack_keypair.keypairs[0].name
+ 

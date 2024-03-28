@@ -1,0 +1,32 @@
+---
+- name: Deploy ManageIQ Appliance
+  hosts: localhost
+  tags: deploy-manageiq
+  gather_facts: no
+  collections:
+    - sdhardy.manageiq
+  roles:
+    - deploy_manageiq_appliance
+
+- name: Ensure ManageIQ Instance is available
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Wait 300 seconds for instance to start
+      ansible.builtin.wait_for:
+        port: 22
+        host: "{{ manageiq_instance_ip }}"
+        search_regex: OpenSSH
+        delay: 2
+        timeout: 30
+      vars:
+        ansible_connection: local
+
+- name: Configure ManageIQ Appliance
+  hosts: manageiq_instance
+  tags: config-manageiq
+  gather_facts: no
+  collections:
+    - sdhardy.manageiq
+  roles:
+    - configure_manageiq_appliance

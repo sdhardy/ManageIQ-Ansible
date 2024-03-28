@@ -1,0 +1,180 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Create Openstack ManageIQ Appliance Image
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: manageiq_openstack_image
+  openstack.cloud.image:
+    interface: "{{ openstack_cloud_endpoint | default(omit, true) }}"
+    name: "{{ manageiq_openstack_image_name }}"
+    container_format: "{{ manageiq_openstack_image_container_format }}"
+    disk_format: "{{ manageiq_openstack_image_disk_format }}"
+    is_public: "{{ manageiq_openstack_image_public }}"
+    is_protected: "{{ manageiq_openstack_image_protected }}"
+    owner: "{{ manageiq_openstack_image_owner }}"
+    filename: "{{ manageiq_image_download.dest }}"
+    tags: "{{ manageiq_openstack_image_tags }}"
+    state: "{{ manageiq_openstack_image_state }}"
+
+- name: DEBUG TASK [ Create Openstack ManageIQ Appliance Image ]
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ manageiq_openstack_image_name }}"
+      - "container_format: {{ manageiq_openstack_image_container_format }}"
+      - "disk_format: {{ manageiq_openstack_image_disk_format }}"
+      - "is_public: {{ manageiq_openstack_image_public }}"
+      - "is_protected: {{ manageiq_openstack_image_protected }}"
+      - "owner: {{ manageiq_openstack_image_owner }}"
+      - "filename: {{ manageiq_image_download.dest }}"
+      - "tags: {{ manageiq_openstack_image_tags }}"
+      - "state: {{ manageiq_openstack_image_state }}"
+      - "manageiq_openstack_image -> "
+      - "{{ manageiq_openstack_image }}"
+
+- name: Remove ManageIQ Appliance Download
+  when: manageiq_image_delete_local | default(false, true)
+  register: manageiq_image_delete
+  ansible.builtin.file:
+    path: "{{ manageiq_image_download.dest }}"
+    state: absent
+
+- name: DEBUG TASK [ Remove ManageIQ Appliance Download ]
+  when: manageiq_image_delete.changed | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "path: {{ manageiq_image_download.dest }}"
+      - "manageiq_image_delete -> "
+      - "{{ manageiq_image_delete }}"
+
+- name: Create ManageIQ Appliance Flavor
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: manageiq_openstack_flavor
+  openstack.cloud.compute_flavor:
+    name: "{{ manageiq_openstack_flavor_name }}"
+    description: "{{ manageiq_openstack_flavor_description }}"
+    ram: "{{ manageiq_openstack_flavor_ram }}"
+    vcpus: "{{ manageiq_openstack_flavor_vcpus }}"
+    disk: "{{ manageiq_openstack_flavor_disk }}"
+    state: "{{ manageiq_openstack_flavor_state }}"
+
+- name: DEBUG TASK [ Create ManageIQ Appliance Flavor ]
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ manageiq_openstack_flavor_name }}"
+      - "description: {{ manageiq_openstack_flavor_description }}"
+      - "ram: {{ manageiq_openstack_flavor_ram }}"
+      - "vcpus: {{ manageiq_openstack_flavor_vcpus }}"
+      - "disk: {{ manageiq_openstack_flavor_disk }}"
+      - "state: {{ manageiq_openstack_flavor_state }}"
+      - "manageiq_openstack_flavor -> "
+      - "{{ manageiq_openstack_flavor }}"
+
+- name: Create ManageIQ Appliance Database Volume
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: manageiq_openstack_volume
+  openstack.cloud.volume:
+    name: "{{ manageiq_openstack_volume_name }}"
+    description: "{{ manageiq_openstack_volume_description }}"
+    size: "{{ manageiq_openstack_volume_size }}"
+    state: "{{ manageiq_openstack_volume_state }}"
+
+- name: DEBUG TASK [ Create ManageIQ Appliance Database Volume ]
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ manageiq_openstack_volume_name }}"
+      - "description: {{ manageiq_openstack_volume_description }}"
+      - "size: {{ manageiq_openstack_volume_size }}"
+      - "state: {{ manageiq_openstack_volume_state }}"
+      - "manageiq_openstack_volume -> "
+      - "{{ manageiq_openstack_volume }}"
+
+- name: Create ManageIQ Appliance Security Group
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: manageiq_openstack_secgroup
+  openstack.cloud.security_group:
+    name: "{{ manageiq_openstack_secgroup_name }}"
+    description: "{{ manageiq_openstack_secgroup_description }}"
+    security_group_rules: "{{ manageiq_openstack_secgroup_rules }}" 
+    state: "{{ manageiq_openstack_secgroup_state }}"
+
+- name: DEBUG TASK [ Create ManageIQ Appliance Security Group ]
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ manageiq_openstack_secgroup_name }}"
+      - "description: {{ manageiq_openstack_secgroup_description }}"
+      - "security_group_rules: {{ manageiq_openstack_secgroup_rules }}" 
+      - "state: {{ manageiq_openstack_secgroup_state }}"
+      - "manageiq_openstack_secgroup -> "
+      - "{{ manageiq_openstack_secgroup }}"
+
+- name: Create ManageIQ Appliance SSH Key Pair
+  ansible.builtin.include_tasks: openstack_create_keypair.yml
+  vars:
+   openstack_public_key_file: "{{ manageiq_openstack_public_key_file }}"
+   openstack_public_key: "{{ manageiq_openstack_public_key }}"
+   openstack_keypair_name: "{{ manageiq_openstack_instance_keyname
+           | default(manageiq_openstack_public_key_name, true) }}"
+
+- name: Create ManageIQ Appliance Instance
+  environment: "{{ environment_overrides | default({}, true) }}"
+  register: manageiq_openstack_instance
+  openstack.cloud.server:
+    name: "{{ manageiq_openstack_instance_name }}"
+    description: "{{ manageiq_openstack_instance_description }}"
+    key_name: "{{ manageiq_openstack_instance_keyname }}"
+    flavor: "{{ manageiq_openstack_flavor.flavor.id }}"
+    image: "{{ manageiq_openstack_image.image.id }}"
+    volumes: ["{{ manageiq_openstack_volume.volume.id }}"]
+    nics: "{{ manageiq_openstack_instance_networks }}"
+    security_groups: ["{{ manageiq_openstack_secgroup.security_group.id }}"]
+    state: "{{ manageiq_openstack_instance_state }}"
+    auto_ip: false
+    reuse_ips: false
+    wait: true
+
+- name: DEBUG TASK [ Create ManageIQ Appliance Instance ]
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg:
+      - "name: {{ manageiq_openstack_instance_name }}"
+      - "description: {{ manageiq_openstack_instance_description }}"
+      - "key_name: {{ manageiq_openstack_instance_keyname }}"
+      - "flavor: {{ manageiq_openstack_flavor.flavor.id }}"
+      - "image: {{ manageiq_openstack_image.image.id }}"
+      - "volumes: {{ manageiq_openstack_volume.volume.id }}"
+      - "nics: {{ manageiq_openstack_instance_networks }}"
+      - "state: {{ manageiq_openstack_instance_state }}"
+      - "manageiq_openstack_instance -> "
+      - "{{ manageiq_openstack_instance }}"
+
+- name: Set ManageIQ Appliance IP Address fact
+  ansible.builtin.set_fact:
+    manageiq_instance_ip: "{{ manageiq_openstack_instance | community.general.json_query(query) }}"
+  vars:
+    query: "server.addresses.{{ manageiq_openstack_instance_ssh_net_name }}[0].addr"
+
+- name: DEBUG TASK [ Set ManageIQ Appliance IP Address fact ] 
+  when: playbook_debug | default(false, true)
+  ansible.builtin.debug:
+    msg: "{{ manageiq_instance_ip }}"
+
+- name: Add ManageIQ Appliance to ansible hosts
+  ansible.builtin.add_host:
+    name: "{{ manageiq_instance_ip }}"
+    groups: manageiq_instance
