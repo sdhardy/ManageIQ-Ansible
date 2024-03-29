@@ -1,0 +1,38 @@
+# System user and group
+manageiq_system_user_name: manageiq
+manageiq_system_group_name: manageiq
+# System directories
+mangeiq_app_dir: /var/www/miq/vmdb
+manageiq_system_dirs:
+ - { name: etc, path: /etc/manageiq }
+ - { name: opt, path: /opt/manageiq }
+ - { name: temp, path: /var/www/miq_tmp }
+ - { name: app, path: /var/www/miq/vmdb }
+
+# The local address for this manageiq instance
+manageiq_address: "{{ ansible_host }}"
+# The FQDN for this manaageiq instance
+manageiq_fqdn: "{{ hostvars[ansible_host].fqdn }}"
+# Inventory group containing the hosts for the cluster
+mangeiq_host_group: "manageiq_instance"
+# Allow role to adjust /etc/hosts file
+manageiq_manage_hosts_entries: true
+# Hosts file entries
+manageiq_hosts_entries: >-
+  {{ groups[manageiq_host_group] | map('extract', hostvars) | list |
+     json_query(
+       "[].{address: mangeiq_address || ansible_host , hostnames: [ansible_facts.hostname, ansible_facts.fqdn] }"
+     )
+  }} 
+
+# Apt options
+cache_timeout: 3600
+# present or latest
+manageiq_package_state: "latest"
+
+# Git options
+manageiq_release: "petrosian"
+manageiq_app_repo: https://github.com/ManageIQ/manageiq.git
+manageiq_app_repo_branch: "{{ manageiq_release }}-1"
+manageiq_appliance_repo: https://github.com/ManageIQ/manageiq-appliance.git
+manageiq_appliance_repo_branch: "{{ manageiq_release }}"

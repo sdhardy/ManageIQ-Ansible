@@ -1,0 +1,96 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Manage /etc/hosts files
+  block:
+    - name: Fail if hosts file is not managed yet
+      ansible.builtin.command: grep "OPENSTACK-ANSIBLE MANAGED BLOCK" /etc/hosts
+      changed_when: false
+  rescue:
+    - name: Rescue failure and add required records
+      ansible.builtin.lineinfile:
+        dest: /etc/hosts
+        state: present
+        line: "{{ item.address }} {{ item.hostnames | join(' ') }}"
+      with_items: "{{ manageiq_hosts_entries }}"
+  always:
+    - name: Ensure localhost /etc/hosts entry is correct
+      ansible.builtin.lineinfile:
+        dest: /etc/hosts
+        state: present
+        line: '127.0.0.1 localhost'
+        regexp: '^127\.0\.0\.1'
+    - name: Remove hostname record for 127.0.1.1
+      ansible.builtin.replace:
+        path: /etc/hosts
+        regexp: '^(127\.0\.1\.1)\s*(\S*)\s*({{ ansible_facts["hostname"] }})($|\s.*)'
+        replace: '\1 \2 \4'
+  when:
+    - manageiq_manage_hosts_entries | bool
+  tags:
+    - manageiq-config
+
+- name: Create the manageiq system group
+  ansible.builtin.group:
+    name: "{{ manageiq_system_group_name }}"
+    state: "present"
+    system: "yes"
+  tags:
+    - manageiq-config
+
+- name: Create the manageiq system user
+  ansible.builtin.user:
+    name: "{{ manageiq_system_user_name }}"
+    group: "{{ manageiq_system_group_name }}"
+    comment: "ManageIQ"
+    shell: "/bin/false"
+    system: "yes"
+    createhome: "no"
+    home: "{{ (manageiq_system_dirs | selectattr('name', 'equalto', 'app') | first).path }}"
+  tags:
+    - manageiq-config
+
+- name: Create the local directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: "directory"
+    group: "{{ manageiq_system_user_name }}"
+    owner: "{{ manageiq_system_group_name }}"
+    mode: "0755"
+  loop: "{{ manageiq_system_dirs }}"
+  tags:
+    - manageiq-config
+
+- name: Clone the ManageIQ App Git Repository
+  ansible.builtin.git:
+    repo: "{{ manageiq_app_repo }}"
+    dest: "{{ (manageiq_system_dirs | selectattr('name', 'equalto', 'app') | first).path }}"
+    version: "{{ manageiq_app_repo_branch }}"
+    single_branch: yes
+  register: app_repository_clone
+  retries: 3
+  delay: 5
+  until: app_repository_clone is success
+
+- name: Clone the ManageIQ Appliance Git Repository
+  ansible.builtin.git:
+    repo: "{{ manageiq_appliance_repo }}"
+    dest: "{{ (manageiq_system_dirs | selectattr('name', 'equalto', 'etc') | first).path }}/manageiq-appliance"
+    version: "{{ manageiq_appliance_repo_branch }}"
+    single_branch: yes
+  register: appliance_repository_clone
+  retries: 3
+  delay: 5
+  until: appliance_repository_clone is success

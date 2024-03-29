@@ -1,0 +1,9 @@
+---
+- name: Install ManageIQ
+  hosts: localhost
+  tags: install-manageiq
+  gather_facts: yes
+  collections:
+    - sdhardy.manageiq
+  roles:
+    - install_manageiq
