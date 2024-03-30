@@ -21,6 +21,10 @@
   tags: [manageiq_config, manageiq-db]
   import_tasks: manageiq_config_db.yml
 
-- name: Import ManageIQ Config task
+- name: Import ManageIQ Messaging Config
   tags: [manageiq_config, manageiq-msg]
   import_tasks: manageiq_config_msg.yml
+
+- name: Import ManageIQ Provider Config
+  tags: [manageiq_config, manageiq-provider]
+  import_tasks: manageiq_config_provider.yml

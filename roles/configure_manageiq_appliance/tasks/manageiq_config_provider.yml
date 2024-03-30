@@ -1,0 +1,179 @@
+---
+# Copyright 2014, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Authenticate via API
+  block:
+    - name: Authentication Block
+      block:
+        - name: Retrieve API Token
+          no_log: true
+          ansible.builtin.uri:
+            url: "https://{{ manageiq_appliance_fqdn }}/api/auth"
+            validate_certs: "{{ manageiq_appliance_validate_certs }}"
+            user: "{{ manangeiq_webui_username | default(manageiq_webui_default_username, true) }}"
+            password: "{{ manageiq_webui_password | default(manageiq_webui_default_password, true) }}"
+            force_basic_auth: true
+            method: GET
+            headers:
+              Accept: application/json
+          register: login
+      rescue:
+        - name: Fail when receiving a bad status code from API
+          ansible.builtin.debug:
+            msg: "{{ login | json_query(query) }}"
+          vars:
+            query: "json.error.message"
+          failed_when: true
+      always:
+        - name: DEBUG TASK [ Retrieve API Token ]
+          when: playbook_debug | default(false, true)
+          ansible.builtin.debug:
+            msg:
+              - "url: https://{{ manageiq_appliance_fqdn }}/api/auth"
+              - "validate_certs: {{ manageiq_appliance_validate_certs }}"
+              - "user: {{ manageiq_default_username }}"
+              - "login ->"
+              - "{{ login }}"
+
+    - name: Set Authentication Token Fact
+      ansible.builtin.set_fact:
+        token: "{{ login.json.auth_token }}"
+        token_expires: "{{ login.json.expires_on }}"
+        token_ttl: "{{ login.json.token_ttl }}"
+
+    - name: DEBUG TASK [ Set Authentication Token Fact ]
+      when: playbook_debug | default(false, true)
+      ansible.builtin.debug:
+        msg:
+          - "token: {{ login.json.auth_token }}"
+          - "token_expires: {{ login.json.expires_on }}"
+          - "token_ttl: {{ login.json.token_ttl }}"
+
+    - name: Retrieve Provider List
+      ansible.builtin.uri:
+        url: "https://{{ manageiq_appliance_fqdn }}/api/providers?expand=resources&attributes=hostname"
+        validate_certs: "{{ manageiq_appliance_validate_certs }}"
+        headers:
+          Accept: application/json
+          X-Auth-Token: "{{ token }}"
+      register: provider_list
+
+    - name: DEBUG TASK [ Retrieve Provider List ]
+      when: playbook_debug | default(false, true)
+      ansible.builtin.debug:
+        msg:
+          - "token: {{ token }}"
+          - "register: provider_list ->"
+          - "{{ provider_list }}"
+
+    # Retrieve and format the existing provider list so we
+    # can compare the lists and maintain idempotence
+    - name: Set the existing_providers fact
+      ansible.builtin.set_fact:
+        existing_providers: "{{ provider_list | json_query(query) }}"
+      vars:
+        query: "json.resources[].{name: name, type: type, hostname: hostname}"
+
+    - name: DEBUG TASK [ Retrieve Provider List ]
+      when: playbook_debug | default(false, true)
+      ansible.builtin.debug:
+        msg:
+          - "fact: existing_providers ->"
+          - "{{ existing_providers }}"
+
+    - name: Create Provider Block
+      block:
+        - name: Create ManageIQ Provider
+          ansible.builtin.uri:
+            url: "https://{{ manageiq_appliance_fqdn }}/api/providers"
+            validate_certs: "{{ manageiq_appliance_validate_certs }}"
+            headers:
+              Accept: application/json
+              X-Auth-Token: "{{ token }}"
+            method: POST
+            body_format: json
+            body: "{{ item }}"
+          loop: "{{ manageiq_providers }}"
+          loop_control:
+            label: "{{ item.name }}"
+          no_log: true
+          vars:
+            provider: "{{ item | json_query('{name: name, type: type, hostname: hostname}') }}"
+          # Compare our local provider name and type against the
+          #  existing_provider list we pulled from the API earlier
+          when: provider not in existing_providers
+          register: provider_create
+          changed_when: provider_create.status == 200
+      rescue:
+        - name: Fail when receiving a bad status code from API
+          ansible.builtin.fail:
+            msg: "{{ provider_create | json_query(query) }}"
+          vars:
+            query: "results[].json.error[].message"
+      always:
+        - name: DEBUG TASK [ Create ManageIQ Provider ]
+          when:
+            - playbook_debug | default(false, true)
+            - provider_create.skipped != true
+          ansible.builtin.debug:
+            msg:
+              - "register: provider_create ->"
+              - "{{ provider_create }}"
+
+    - name: Update Provider Block
+      block:
+        - name: Update ManageIQ Provider
+          ansible.builtin.uri:
+            url: "https://{{ manageiq_appliance_fqdn }}/api/providers/{{ provider_id }}"
+            validate_certs: "{{ manageiq_appliance_validate_certs }}"
+            headers:
+              Accept: application/json
+              X-Auth-Token: "{{ token }}"
+            method: POST
+            body_format: json
+            body:
+              action: edit
+              resource: "{{ updates }}"
+          loop: "{{ manageiq_providers }}"
+          loop_control:
+            label: "{{ item.name }}"
+          no_log: true
+          vars:
+            provider_id: "{{ provider_list | json_query(id_query) | first }}"
+            id_query: "json.resources[?name=='{{ item.name }}'].id"
+            provider: "{{ item | json_query('{name: name, type: type, hostname: hostname}') }}"
+            # Remove the "type" key in provider dictionary
+            updates: "{{ item | combine({'type': omit}) }}"
+          # Compare our local provider name and type against the
+          #  existing_provider list we pulled from the API earlier
+          when: provider in existing_providers
+          register: provider_update
+      rescue:
+        - name: Fail when receiving a bad status code from API
+          ansible.builtin.fail:
+            msg: "{{ provider_update | json_query(query) }}"
+          vars:
+            query: "results[].json.error[].message"
+      always:
+        - name: DEBUG TASK [ Update ManageIQ Provider ]
+          when:
+            - playbook_debug | default(false, true)
+            - provider_update.skipped != true
+          ansible.builtin.debug:
+            msg:
+              - "register: provider_update ->"
+              - "{{ provider_update }}"
+
+  delegate_to: localhost

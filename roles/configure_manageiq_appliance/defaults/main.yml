@@ -17,10 +17,61 @@ environment_overrides:
 playbook_debug: false
 
 manageiq_appliance_fqdn: manageiq.cloud.local
+# If we should validate SSL Certificates when
+#  connecting to the ManageIQ API endpoint
+manageiq_appliance_validate_certs: false
+# Must be unique per deployment region
 manageiq_appliance_region: 0
+# Dedicated storage required for db
 manageiq_appliance_db_device: /dev/vdb
+# Creds for the Web UI
+#manageiq_webui_username: admin
+#manageiq_webui_password: smartvm
+# Creds for DB and Kafka
 manageiq_appliance_db_password: smartvm
 manageiq_appliance_kafka_username: admin
 manageiq_appliance_kafka_password: smartvm
 manageiq_appliance_keystore_username: admin
 manageiq_appliance_keystore_password: smartvm
+# RabbitMQ Creds for ManageIQ
+manageiq_appliance_rabbitmq_username: manageiq
+manageiq_appliance_rabbitmq_password: MjY4YTQ5MGQ4NTJjZmJkYzcxNjliYWM4YjQ4NjhmMTcgIC0K
+
+# List of ManageIQ Providers and their settings
+#  Documentation for the ManageIQ Provider Settings:
+#  - https://www.manageiq.org/docs/reference/latest/managing_providers/cloud_providers/openstack_providers.html
+#  - https://www.manageiq.org/docs/reference/latest/api/reference/providers.html#creating-providers
+#  - https://www.manageiq.org/docs/reference/latest/api/appendices/resource_attributes.html#provider-attributes
+manageiq_providers:
+  # Cloud Provider Name in ManageIQ UI
+  - name: Openstack Private Cloud
+    # ManageIQ Internal Cloud Provider Type
+    type: "ManageIQ::Providers::Openstack::CloudManager"
+    api_version: v3 # Keystone API Verison
+    uid_ems: default # V3+ User Domain Name (OS_USER_DOMAIN)
+    hostname: 172.29.236.101 # Public Endpoint Hostname
+    # certficate_authority: # CA for the Provider
+    # url: # Provider URL
+    # realm: # Provier realm
+    # zone: In which zone to add the Provider
+    connection_configurations:
+      - endpoint:
+          role: default # ManageIQ Access Role
+          hostname: 172.29.236.101 # Public Endpoint Hostname
+          port: 5000 # Keystone Auth Port
+          # ssl, non-ssl or ssl-without-validation
+          security_protocol: "ssl-without-validation"
+        authentication:
+          # OS_USERNAME
+          userid: admin
+          # OS_PASSWORD
+          password: MWI5MWY4YmM4N2JiMzIxMWM5ZjJlOWQwMzIyODJhNjQgIC0K
+      - endpoint:
+          role: amqp # ManageIQ Access Role
+          hostname: 172.29.236.101 # Rabbit Hostname/IP
+          port: 5672 # Rabbit Port
+          security_protocol: "non-ssl"
+        authentication:
+          userid: "{{ manageiq_appliance_rabbitmq_username }}"
+          password: "{{ manageiq_appliance_rabbitmq_password }}"
+          role: amqp

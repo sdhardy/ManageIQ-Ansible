@@ -17,6 +17,10 @@
 manageiq_default_username: root
 manageiq_default_password: smartvm
 
+# Web UI default creds
+manageiq_webui_default_username: admin
+manageiq_webui_default_password: smartvm
+
 # Keystore default user and pass
 manageiq_default_keystore_username: admin
 manageiq_default_keystore_password: startvm
