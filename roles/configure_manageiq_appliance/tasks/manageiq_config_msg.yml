@@ -22,11 +22,11 @@
     argv:
       - "{{ manageiq_appliance_cli }}"
       - --message-server-config
-      - "--message-server-host='{{ manageiq_appliance_fqdn }}'"
-      - "--message-server-username='{{ manageiq_appliance_kafka_username }}'"
-      - "--message-server-password='{{ manageiq_appliance_kafka_password }}'"
-      - "--message-keystore-username='{{ manageiq_appliance_keystore_username }}'"
-      - "--message-keystore-password='{{ manageiq_appliance_keystore_password }}'"
+      - "--message-server-host={{ manageiq_appliance_fqdn }}"
+      - "--message-server-username={{ manageiq_appliance_kafka_username }}"
+      - "--message-server-password={{ manageiq_appliance_kafka_password }}'"
+      - "--message-keystore-username={{ manageiq_appliance_keystore_username }}"
+      - "--message-keystore-password={{ manageiq_appliance_keystore_password }}"
 
 - name: DEBUG TASK [ Initialize ManageIQ Message Server ]
   when: playbook_debug | default(false, true)

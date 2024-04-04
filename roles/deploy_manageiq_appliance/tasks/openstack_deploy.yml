@@ -22,7 +22,7 @@
     container_format: "{{ manageiq_openstack_image_container_format }}"
     disk_format: "{{ manageiq_openstack_image_disk_format }}"
     is_public: "{{ manageiq_openstack_image_public }}"
-    is_protected: "{{ manageiq_openstack_image_protected }}"
+    protected: "{{ manageiq_openstack_image_protected }}"
     owner: "{{ manageiq_openstack_image_owner }}"
     filename: "{{ manageiq_image_download.dest }}"
     tags: "{{ manageiq_openstack_image_tags }}"
@@ -167,7 +167,7 @@
   ansible.builtin.set_fact:
     manageiq_instance_ip: "{{ manageiq_openstack_instance | community.general.json_query(query) }}"
   vars:
-    query: "server.addresses.{{ manageiq_openstack_instance_ssh_net_name }}[0].addr"
+    query: "server.addresses.{{ manageiq_openstack_instance_net_name }}[0].addr"
 
 - name: DEBUG TASK [ Set ManageIQ Appliance IP Address fact ] 
   when: playbook_debug | default(false, true)

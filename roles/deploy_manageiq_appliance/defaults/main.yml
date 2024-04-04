@@ -51,9 +51,9 @@ manageiq_openstack_volume_state: present
 manageiq_openstack_instance_name: ManageIQ
 manageiq_openstack_instance_description: ManageIQ Petrosian Appliance
 manageiq_openstack_instance_keyname: support
-manageiq_openstack_instance_networks: [ { net-name: public }, { net-name: private } ]
+manageiq_openstack_instance_net_name: GATEWAY_NET
+manageiq_openstack_instance_networks: [ { net-name: "{{ manageiq_openstack_instance_net_name }}" } ]
 manageiq_openstack_instance_state: present
-manageiq_openstack_instance_ssh_net_name: public
 
 manageiq_openstack_secgroup_name: ManageIQ
 manageiq_openstack_secgroup_description: ManageIQ Appliance security group
